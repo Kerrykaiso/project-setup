@@ -8,7 +8,7 @@ const verifyToken:RequestHandler = (req,res,next) =>{
      if (!accessToken) {
         throw new AppError("No access token",401,"failed")
      }
-     const token = accessToken.split('')[1]
+     const token = accessToken
       if (!token) {
         throw new AppError("Token missing",401,"failed")
      }

@@ -1,12 +1,11 @@
 import express  from "express";
 import type {Request,Response, NextFunction} from "express";
-import cookieParser from "cookie-parser";
  import dotenv from "dotenv"
  dotenv.config()
  import errorHandler from "./middlewares/errorHandler.ts";
-import {rateLimiter} from "./middlewares/rateLimit.ts"
+import {globalLimiter} from "./middlewares/rateLimit.ts"
 import proxy from "express-http-proxy"
-import { endpointLimiter } from "./middlewares/rateLimit.ts";
+import cookieParser from "cookie-parser"
 import { redisConnection } from "./utils/redis.ts";
 import { logger } from "./utils/logger.ts";
 import AppError from "./utils/appError.ts";
@@ -15,13 +14,9 @@ import { notfound } from "./middlewares/not-found.ts";
  const PORT = process.env.API_GATEWAY_PORT
 
 
-  app.use((req,res,next)=>{
-  rateLimiter.consume(req.ip as string).then(()=>next()).catch(err=>{
-    res.status(429).json({status:"failed", message:"Too many requests"})
-    logger.warn("Too many request")
-  })
- })
-  app.use(endpointLimiter)
+  app.use(globalLimiter)
+ 
+// app.use(endpointLimiter)
   app.use(express.json())
   app.use(cookieParser())
 
@@ -31,13 +26,19 @@ import { notfound } from "./middlewares/not-found.ts";
      return req.originalUrl.replace(/^\/v1/, "/api")
     },
     proxyErrorHandler:(err:any,res:Response,next:NextFunction)=>{
-      if (err) {
-        console.log("err",err)
+      if (err && err.code ==="ECONNRESET") {
         logger.error(`proxy server error ${err.message}`)
+        console.log("err",err)
         throw new AppError("Internal server error",500,"failed")
+      } else if (err && err.code ==="ECONNREFUSED") {
+         throw new AppError("Service unavailable",500,"failed")
+      }
+      else{
+        next(err)
       }
     }
-  }
+   
+}
   //service health status
   app.get("/api-gateway-health", (_,res)=>{
     res.status(200).json({message:"api-gateway-service runnig", success:true})
@@ -46,6 +47,7 @@ import { notfound } from "./middlewares/not-found.ts";
   
   app.use("/v1/auth",proxy(process.env.AUTH_PATH_URL as string,{...proxyOptions,
     proxyReqOptDecorator:(proxyReqOpts,srcreq)=>{
+      proxyReqOpts.timeout=5000
       return proxyReqOpts
     },
     userResDecorator:(proxyRes,proxyResData,userReq,userRes)=>{
@@ -53,7 +55,7 @@ import { notfound } from "./middlewares/not-found.ts";
     }
   }))
 
-
+ 
 
 
   app.use(notfound)

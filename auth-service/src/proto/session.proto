@@ -1,0 +1,40 @@
+syntax = "proto3";
+import "google/protobuf/timestamp.proto";
+package session;
+
+message SessionRequest {
+  string userId = 1;
+}
+
+message SessionResponse {
+  string sessionId = 1;
+  google.protobuf.Timestamp expiresAt = 2;
+
+}
+message getSessionRequest {
+   string sessionId =1;
+
+}
+message getSessionResponse {
+  string sessionId = 1;
+  google.protobuf.Timestamp expiresAt = 2;
+  string userId = 3;
+}
+message deleteSessionRequest {
+  string sessionId =1;
+}
+message deleteSessionResponse{
+  bool success =1;
+}
+message updateSessionRequest {
+  string sessionId =1;
+}
+message updateSessionResponse {
+  bool success=1;
+}
+service SessionService {
+  rpc CreateSession (SessionRequest) returns (SessionResponse);
+  rpc deleteSession(deleteSessionRequest) returns (deleteSessionResponse);
+  rpc getSession(getSessionRequest) returns (getSessionResponse);
+  rpc updateSession(updateSessionRequest) returns(updateSessionResponse);
+}

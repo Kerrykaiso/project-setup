@@ -7,8 +7,10 @@ import AppError from "./appError.ts"
 
     if(!connectRedis){
         connectRedis =   createClient({
-            url: "redis://127.0.0.1:6379"
+          url : "redis://127.0.0.1:6379"
         })
+        connectRedis.connect().catch((err)=>new AppError(err.message,400,"failed"))
+
         connectRedis.on("error",(err)=>{
             console.log("Redis connection error")
         })
@@ -30,7 +32,6 @@ import AppError from "./appError.ts"
             console.log("SIGTERM closing redis")
             await connectRedis.quit()
         })
-        connectRedis.connect().catch((err)=>new AppError(err.message,400,"failed"))
     }
    return connectRedis
 }
