@@ -11,7 +11,6 @@ import (
 
 var DB *gorm.DB
 
-
 type UserModel struct {
 	UserId string `json:"userId" gorm:"primaryKey"`
 	Name string `json:"name"`
@@ -30,3 +29,4 @@ func ConnectDb(){
 	DB = database
    fmt.Println("Database connected successfully")
 } 
+

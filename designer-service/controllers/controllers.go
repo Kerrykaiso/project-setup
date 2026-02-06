@@ -18,9 +18,9 @@ type DesignerData struct {
 	Password string `json:"password" validate:"required,min=5"`
 	Email string `json:"email" validate:"required,email"`
 }
-
 func HealthController(c *gin.Context) {
- c.JSON(200, gin.H{"message":"Server up and running"})
+	
+ c.JSON(200, gin.H{"message":"designer server up and running"})
 }
 
 var validate = validator.New()
@@ -89,7 +89,7 @@ func Login(c *gin.Context){
 	c.JSON(401, gin.H{"error": "Invalid input"})
 	return
  }
-    if err:= config.DB.Where("email =?", data.Email).First(foundUser).Error; err != nil {
+    if err:= config.DB.Where("email = ?", data.Email).First(foundUser).Error; err != nil {
        c.JSON(http.StatusBadRequest, gin.H{"error": "Incorrect email or password"})
 	   return
 	}
@@ -98,10 +98,50 @@ func Login(c *gin.Context){
 	c.JSON(http.StatusBadRequest, gin.H{"error":"Incorrect email or password"})
 	return
   }
-   token, err := utils.GenerateToken(foundUser.Name, foundUser.UserId, foundUser.Email)
+   accessToken,refreshToken,err := utils.GenerateAcessAndRefreshToken(foundUser.Name, foundUser.UserId, foundUser.Email)
    if err != nil {
 	c.JSON(http.StatusInternalServerError, gin.H{"error":"Error generating access token"})
 	return
    }
-	c.JSON(http.StatusAccepted, gin.H{"token": token})
+
+   c.SetCookie(
+	"accessToken",
+	accessToken,
+	3600*24,
+	"/",
+	"",
+    false,
+	true,
+   )
+    c.SetCookie(
+	"refreshToken",
+	refreshToken,
+	3600*168,
+	"/api/refresh",
+	"",
+    false,
+	true,
+   )
+	c.JSON(http.StatusOK, gin.H{"access": accessToken,"refresh":refreshToken})
+}
+
+
+
+func Refresh(c *gin.Context){
+ cookie,err:= c.Cookie("refreshToken")
+ if err !=nil {
+	c.JSON(http.StatusForbidden, gin.H{"error":err.Error()})
+	return
+ }
+ if cookie=="" {
+	c.JSON(http.StatusForbidden, gin.H{"error":"Missing refresh token"})
+	return
+ }
+
+}
+
+func Logout(c *gin.Context){
+	c.SetCookie("accessToken", "", -1,"","",false,false)
+	c.SetCookie("refreshToken", "", -1,"/api/refresh","",false,false)
+	c.JSON(http.StatusOK, gin.H{"Message":"Logout successful"})
 }
