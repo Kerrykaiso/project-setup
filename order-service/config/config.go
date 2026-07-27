@@ -111,5 +111,5 @@ defer cancel()
 		return
 	}
   R=rdb
- fmt.Println("Redis connected successfully")
+ log.Println("Redis connected successfully")
 }

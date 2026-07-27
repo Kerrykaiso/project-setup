@@ -50,7 +50,7 @@ func ListenForEvents(){
 		nil,
 	)
 	if bindError!=nil {
-		log.Println("error binding update product queue")
+		log.Println("error binding create order queue")
 	}
 
 	

@@ -16,7 +16,7 @@ import (
 
 var BASE_URL = "http://oneofone.com"
 
-type CreateOrder struct{
+type CreateOrder struct {
   ProductId string
   PhoneNumber string
   OrderId string
@@ -25,14 +25,14 @@ type CreateOrder struct{
   State string
   Address string
   CustomerEmail string
-  Amount string
+  Amount int
   Reference string
   Url string
 }
-type ProductUpdate struct{
+
+type ProductUpdate struct {
 	Owner string
 	ProductId string
-
 }
 
 func GetEnv(key string, defaultValue string) string{
@@ -52,7 +52,7 @@ func IdempotencytLock (key string)(bool,error){
 		return false,errors.New("error acquiring idempotency lock")
 	} 
 	if !ok {
-		return false,errors.New("idempotencty Key already locked")
+		return false,errors.New("idempotency Key already locked")
 	}
    return true, nil
 }

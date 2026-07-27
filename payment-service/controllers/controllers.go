@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"os"
 	_ "payment-service/config"
+
 	"payment-service/utils"
 	"time"
 
@@ -205,12 +206,15 @@ c.JSON(http.StatusOK, gin.H{"message":"webhook received"})
     event:=webhookData.Event
 
 	if event != "charge.success" {
-		
+		 log.Println("Debit failed:", err)
+		 c.JSON(http.StatusInternalServerError, gin.H{"error": "unsuccessful debit"})
+		 return
 	}
 
     orderId:= uuid.New().String()
     reference:=webhookData.Data["reference"].(string)
-	amount := webhookData.Data["ëmail"].(string)
+	amountFloat := webhookData.Data["amount"].(float64)
+	amount:= int(amountFloat) / 100
 	customer := webhookData.Data["customer"].(map[string]any)
     email := customer["email"].(string)
 	metadata,_ := webhookData.Data["metadata"].(map[string]any)
@@ -241,6 +245,7 @@ c.JSON(http.StatusOK, gin.H{"message":"webhook received"})
         ProductId: productId,
 		Owner: owner,
 	 }
+	 log.Printf("Order details: %+v \n", orderDetails)
 	 err = utils.EmitCreateOrderEvent(orderDetails)
 	 if err != nil {
 		 log.Println("Error emitting create order event:", err)

@@ -9,6 +9,8 @@ import (
 	"order-service/events"
 
 	//"order-service/service"
+
+	//"order-service/service"
 	"order-service/structs"
 )
 
@@ -36,7 +38,9 @@ func StartJobQueue(){
 	// 	log.Println("failed to process order job")
 	// 	continue
 	//    }
-        
+	// var payload structs.CreateOrder
+	// json.Unmarshal(job.Payload,&payload)
+    //     service.CreateOrderService(payload)
 	}
 }
 
@@ -48,5 +52,5 @@ func ProcessJob(data  events.Job)error{
   }
   //err = service.CreateOrderService(order)
   fmt.Println(order)
-  return err
+  return nil
 }

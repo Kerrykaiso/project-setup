@@ -19,33 +19,41 @@ app.use(globalLimiter);
 app.use(express.json());
 app.use(cookieParser());
 
-const proxyOptions = {
-  proxyReqPathResolver: (req: Request) => {
-    return req.originalUrl.replace(/^\/v1/, "/api");
-  },
-  proxyErrorHandler: (err: any, res: Response, next: NextFunction) => {
-    if (err && err.code === "ECONNRESET") {
-      logger.error(`proxy server error ${err.message}`);
-      console.log("err", err);
-      throw new AppError("Internal server error", 500, "failed");
-    } else if (err && err.code === "ECONNREFUSED") {
-      throw new AppError("Service unavailable", 500, "failed");
-    } else {
-      next(err);
-    }
-  },
-};
+function createProxyOptions(serviceName: string) {
+  return {
+    proxyReqPathResolver: (req: Request) => {
+      return req.originalUrl.replace(/^\/v1/, "/api");
+    },
+
+    proxyErrorHandler: (err: any, res: Response, next: NextFunction) => {
+      logger.error(`${serviceName} error: ${err.message}`);
+
+      if (err && err.code === "ECONNREFUSED") {
+        logger.error(`proxy server error ${err.message}`);
+        return next(
+          new AppError(`${serviceName} is unavailable`, 503, "failed"),
+        );
+      }
+      if (err && err.code === "ECONNRESET") {
+        console.log("err", err);
+        return next(new AppError("Internal server error", 500, "failed"));
+      }
+      return next(err);
+    },
+  };
+}
+
 //service health status
 app.get("/api-gateway-health", (_, res) => {
   res
     .status(200)
-    .json({ message: "api-gateway-service runnig", success: true });
+    .json({ message: "api-gateway-service running", success: true });
 });
 
 app.use(
   "/v1/auth",
   proxy(process.env.AUTH_PATH_URL as string, {
-    ...proxyOptions,
+    ...createProxyOptions("Users"),
     proxyReqOptDecorator: (proxyReqOpts, srcreq) => {
       proxyReqOpts.timeout = 5000;
       return proxyReqOpts;
@@ -53,13 +61,13 @@ app.use(
     userResDecorator: (proxyRes, proxyResData, userReq, userRes) => {
       return proxyResData;
     },
-  })
+  }),
 );
 
 app.use(
   "/v1",
   proxy(process.env.DESIGNER_PATH_URL as string, {
-    ...proxyOptions,
+    ...createProxyOptions("Designer"),
     proxyReqOptDecorator: (proxyReqOpts, srcreq) => {
       proxyReqOpts.timeout = 5000;
       return proxyReqOpts;
@@ -67,7 +75,7 @@ app.use(
     userResDecorator: (proxyRes, proxyResData, userReq, userRes) => {
       return proxyResData;
     },
-  })
+  }),
 );
 
 app.use(notfound);
